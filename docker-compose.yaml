@@ -136,7 +136,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - /var/lib/srv/$USER/docker/db/couchdb/budibase:/opt/couchdb/data
+      - '/var/lib/srv/$USER/databases/couchdb/budibase:/opt/couchdb/data'
     networks:
       - budibase
 
@@ -149,7 +149,7 @@ services:
     command: 'redis-server'
     logging: *default-logging
     volumes:
-      - /var/lib/srv/$USER/docker/db/redis/budibase:/data
+      - '/var/lib/srv/$USER/databases/redis/budibase:/data'
     healthcheck:
       test:
         - CMD
@@ -173,7 +173,7 @@ services:
     environment:
       - MINIO_BROWSER=off
     volumes:
-      - /var/lib/srv/$USER/docker/storage/minio/budibase:/data
+      - '/var/lib/srv/$USER/storage/minio/budibase:/data'
     healthcheck:
       test:
         - CMD
