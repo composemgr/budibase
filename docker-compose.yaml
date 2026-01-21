@@ -1,0 +1,196 @@
+# nginx proxy address - http://172.17.0.1:59061
+
+name: budibase
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  proxy:
+    image: budibase.docker.scarf.sh/budibase/proxy:latest
+    container_name: budibase-proxy
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      RESOLVER: 172.17.0.1
+      SERVICE_FQDN_BUDIBASE_10000: ""
+      PROXY_RATE_LIMIT_API_PER_SECOND: 20
+      PROXY_RATE_LIMIT_WEBHOOKS_PER_SECOND: 10
+      APPS_UPSTREAM_URL: http://budibase-app:4002'
+      MINIO_UPSTREAM_URL: http://budibase-minio:9000
+      WORKER_UPSTREAM_URL: http://budibase-worker:4003
+      COUCHDB_UPSTREAM_URL: http://budibase-couchdb:5984
+    ports:
+      - '172.17.0.1:59061:10000'
+    depends_on:
+      - app
+      - minio
+      - worker
+      - couchdb
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://localhost:10000/'
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    networks:
+      - budibase
+
+  app:
+    image: budibase.docker.scarf.sh/budibase/apps:latest
+    container_name: budibase-app
+    hostname: budibase-server
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      PORT: 4002
+      SELF_HOSTED: 1
+      LOG_LEVEL: info
+      ENABLE_ANALYTICS: true
+      BUDIBASE_ENVIRONMENT: PRODUCTION
+      BB_ADMIN_USER_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
+      BB_ADMIN_USER_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}
+      REDIS_URL: budibase-redis:6379
+      MINIO_URL: http://budibase-minio:9000
+      WORKER_URL: http://budibase-worker:4003
+      COUCH_DB_URL: http://budibase-couchdb:5984
+      JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_secret_min_32_chars}
+      API_ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_encryption_key_min_32_chars}
+      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_64_chars}
+    depends_on:
+      - worker
+      - redis
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://budibase-app:4002'
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    networks:
+      - budibase
+
+  worker:
+    image: budibase.docker.scarf.sh/budibase/worker:latest
+    container_name: budibase-worker
+    hostname: budibase-worker
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      PORT: 4003
+      SELF_HOSTED: 1
+      CLUSTER_PORT: 10000
+      REDIS_URL: budibase-redis:6379
+      APPS_URL: http://budibase-app:4002
+      MINIO_URL: http://budibase-minio:9000
+      COUCH_DB_URL: http://budibase-couchdb:5984
+      JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_secret_min_32_chars}
+      API_ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_encryption_key_min_32_chars}
+      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_64_chars}
+    depends_on:
+      - redis
+      - minio
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://budibase-worker:4003'
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    networks:
+      - budibase
+
+  couchdb:
+    image: budibase/couchdb:latest
+    container_name: budibase-couchdb
+    hostname: budibase-couchdb
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      TARGETBUILD: docker-compose
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://localhost:5984/'
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - './rootfs/db/couchdb/budibase:/opt/couchdb/data'
+    networks:
+      - budibase
+
+  redis:
+    image: redis:latest
+    container_name: budibase-redis
+    hostname: budibase-redis
+    restart: always
+    pull_policy: always
+    command: 'redis-server'
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - './rootfs/db/redis/budibase:/data'
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    networks:
+      - budibase
+
+  minio:
+    image: minio/minio:latest
+    container_name: budibase-minio
+    hostname: budibase-minio
+    restart: always
+    pull_policy: always
+    command: 'server /data --console-address ":9001"'
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      MINIO_BROWSER: off
+    volumes:
+      - './rootfs/data/minio:/data'
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://localhost:9000/minio/health/live'
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - budibase
+
+networks:
+  budibase:
+    name: budibase
+    external: false
