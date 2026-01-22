@@ -137,7 +137,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - './rootfs/db/couchdb/budibase:/opt/couchdb/data'
+      - './rootfs/data/db/couchdb/budibase:/opt/couchdb/data'
     networks:
       - budibase
 
@@ -152,7 +152,7 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
     volumes:
-      - './rootfs/db/redis/budibase:/data'
+      - './rootfs/data/db/redis/budibase:/data'
     healthcheck:
       test:
         - CMD
