@@ -1,27 +1,40 @@
 ## 👋 Welcome to budibase 🚀
 
-budibase - Self-hosted Docker Compose deployment
+Low-code platform for building internal apps
 
 ## 📋 Description
 
-Budibase is a containerized service deployed using Docker Compose. This setup provides a complete, production-ready deployment with proper security defaults, logging, and configuration management.
+Low-code platform for building internal apps
+
+## 🚀 Services
+
+- **proxy**: budibase.docker.scarf.sh/budibase/proxy:latest
+- **app**: budibase.docker.scarf.sh/budibase/apps:latest
+- **worker**: budibase.docker.scarf.sh/budibase/worker:latest
+- **couchdb**: budibase/couchdb:latest
+- **minio**: minio/minio:latest
+
+### Infrastructure Components
+
+- **redis**: Redis database
+
 
 ## 📦 Installation
 
-### Using curl
-```shell
-curl -q -LSsf "https://raw.githubusercontent.com/composemgr/budibase/main/docker-compose.yaml" | docker compose -f - up -d
+### Option 1: Quick Install
+```bash
+curl -q -LSsf "https://raw.githubusercontent.com/composemgr/budibase/main/docker-compose.yaml" -o compose.yml
 ```
 
-### Using git
-```shell
+### Option 2: Git Clone
+```bash
 git clone "https://github.com/composemgr/budibase" ~/.local/srv/docker/budibase
 cd ~/.local/srv/docker/budibase
 docker compose up -d
 ```
 
-### Using composemgr
-```shell
+### Option 3: Using composemgr
+```bash
 composemgr install budibase
 ```
 
@@ -31,9 +44,9 @@ composemgr install budibase
 
 ```shell
 TZ=America/New_York
-BASE_HOST_NAME=${HOSTNAME}
-BASE_DOMAIN_NAME=
 ```
+
+See `docker-compose.yaml` for complete list of configurable options.
 
 ## 🌐 Access
 
@@ -41,43 +54,47 @@ BASE_DOMAIN_NAME=
 
 ## 📂 Volumes
 
-- `./rootfs/config/budibase` - Configuration files
-- `./rootfs/data/budibase` - Application data
+- `./rootfs/data/db/couchdb/budibase` - Data storage
+- `./rootfs/data/db/redis/budibase` - Data storage
+- `./rootfs/data/minio` - Data storage
 
 ## 🔐 Security
 
-- Change default passwords after first login
-- Use HTTPS via reverse proxy in production
-- Configure authentication as needed
+- Change all default passwords before deploying to production
+- Use strong secrets for all authentication tokens
+- Configure HTTPS using a reverse proxy (nginx, traefik, caddy)
+- Regularly update Docker images for security patches
+- Backup your data regularly
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f
+docker compose logs -f proxy
 ```
 
 ## 🛠️ Management
 
-### Start services
-```shell
+```bash
+# Start services
 docker compose up -d
-```
 
-### Stop services
-```shell
+# Stop services
 docker compose down
-```
 
-### Update images
-```shell
+# Update to latest images
 docker compose pull && docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Restart services
+docker compose restart
 ```
 
 ## 📋 Requirements
 
 - Docker Engine 20.10+
 - Docker Compose V2+
-- Sufficient disk space for data and logs
 
 ## 🤝 Author
 
