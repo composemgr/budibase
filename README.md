@@ -54,9 +54,9 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/db/couchdb/budibase` - Data storage
-- `./rootfs/data/db/redis/budibase` - Data storage
-- `./rootfs/data/minio` - Data storage
+- `./volumes/data/db/couchdb/budibase` - Data storage
+- `./volumes/data/db/redis/budibase` - Data storage
+- `./volumes/data/minio` - Data storage
 
 ## 🔐 Security
 
