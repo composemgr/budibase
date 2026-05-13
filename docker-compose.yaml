@@ -16,11 +16,11 @@ services:
     pull_policy: always
     logging: *default-logging
     environment:
-      RESOLVER: 172.17.0.1
-      SERVICE_FQDN_BUDIBASE_10000: ""
+      TZ: ${TZ:-America/New_York}
+      RESOLVER: 127.0.0.11
       PROXY_RATE_LIMIT_API_PER_SECOND: 20
       PROXY_RATE_LIMIT_WEBHOOKS_PER_SECOND: 10
-      APPS_UPSTREAM_URL: http://budibase-app:4002'
+      APPS_UPSTREAM_URL: http://budibase-app:4002
       MINIO_UPSTREAM_URL: http://budibase-minio:9000
       WORKER_UPSTREAM_URL: http://budibase-worker:4003
       COUCHDB_UPSTREAM_URL: http://budibase-couchdb:5984
@@ -47,25 +47,28 @@ services:
   app:
     image: budibase.docker.scarf.sh/budibase/apps:latest
     container_name: budibase-app
-    hostname: budibase-server
+    hostname: budibase-app
     restart: always
     pull_policy: always
     logging: *default-logging
     environment:
+      TZ: ${TZ:-America/New_York}
       PORT: 4002
       SELF_HOSTED: 1
       LOG_LEVEL: info
-      ENABLE_ANALYTICS: true
+      ENABLE_ANALYTICS: false
       BUDIBASE_ENVIRONMENT: PRODUCTION
       BB_ADMIN_USER_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
-      BB_ADMIN_USER_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}
+      BB_ADMIN_USER_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-example.com}
       REDIS_URL: budibase-redis:6379
       MINIO_URL: http://budibase-minio:9000
+      MINIO_ACCESS_KEY: ${APP_ADMIN_USER:-admin}
+      MINIO_SECRET_KEY: ${DB_ADMIN_PASS:-changeme_admin_password}
       WORKER_URL: http://budibase-worker:4003
-      COUCH_DB_URL: http://budibase-couchdb:5984
+      COUCH_DB_URL: http://${DB_ADMIN_USER:-budibase}:${DB_ADMIN_PASS:-changeme_admin_password}@budibase-couchdb:5984
       JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_secret_min_32_chars}
       API_ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_encryption_key_min_32_chars}
-      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_64_chars}
+      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_32_chars}
     depends_on:
       - worker
       - redis
@@ -90,16 +93,19 @@ services:
     pull_policy: always
     logging: *default-logging
     environment:
+      TZ: ${TZ:-America/New_York}
       PORT: 4003
       SELF_HOSTED: 1
       CLUSTER_PORT: 10000
       REDIS_URL: budibase-redis:6379
       APPS_URL: http://budibase-app:4002
       MINIO_URL: http://budibase-minio:9000
-      COUCH_DB_URL: http://budibase-couchdb:5984
+      MINIO_ACCESS_KEY: ${APP_ADMIN_USER:-admin}
+      MINIO_SECRET_KEY: ${DB_ADMIN_PASS:-changeme_admin_password}
+      COUCH_DB_URL: http://${DB_ADMIN_USER:-budibase}:${DB_ADMIN_PASS:-changeme_admin_password}@budibase-couchdb:5984
       JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_secret_min_32_chars}
       API_ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_encryption_key_min_32_chars}
-      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_64_chars}
+      INTERNAL_API_KEY: ${APP_API_TOKEN:-changeme_internal_api_key_min_32_chars}
     depends_on:
       - redis
       - minio
@@ -126,6 +132,8 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       TARGETBUILD: docker-compose
+      COUCHDB_USER: ${DB_ADMIN_USER:-budibase}
+      COUCHDB_PASSWORD: ${DB_ADMIN_PASS:-changeme_admin_password}
     healthcheck:
       test:
         - CMD
@@ -142,7 +150,7 @@ services:
       - budibase
 
   redis:
-    image: redis:latest
+    image: redis:alpine
     container_name: budibase-redis
     hostname: budibase-redis
     restart: always
@@ -175,9 +183,11 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      MINIO_ACCESS_KEY: ${APP_ADMIN_USER:-admin}
+      MINIO_SECRET_KEY: ${DB_ADMIN_PASS:-changeme_admin_password}
       MINIO_BROWSER: off
     volumes:
-      - './volumes/data/minio:/data'
+      - './volumes/data/minio/budibase:/data'
     healthcheck:
       test:
         - CMD
