@@ -207,8 +207,8 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
-      MINIO_ACCESS_KEY: ${APP_ADMIN_USER:-admin}
-      MINIO_SECRET_KEY: ${DB_ADMIN_PASS:-changeme_admin_password}
+      MINIO_ROOT_USER: ${APP_ADMIN_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${DB_ADMIN_PASS:-changeme_admin_password}
       MINIO_BROWSER: off
       CONTAINER_NAME: budibase-minio
     volumes:
